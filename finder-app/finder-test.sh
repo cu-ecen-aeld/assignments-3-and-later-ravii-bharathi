@@ -28,13 +28,13 @@ fi
 
 MATCHSTR="The number of files are ${NUMFILES} and the number of matching lines are ${NUMFILES}"
 
-#echo "Cleaning previous build artifacts in finder-app"
-#make clean
+echo "Cleaning previous build artifacts in finder-app"
+make clean
 
-#echo "Building writer application"
-#make 
+echo "Building writer application"
+make 
 
-#mkdir -p "$WRITEDIR"
+mkdir -p "$WRITEDIR"
 
 echo "Writing ${NUMFILES} files containing string ${WRITESTR} to ${WRITEDIR}"
 
