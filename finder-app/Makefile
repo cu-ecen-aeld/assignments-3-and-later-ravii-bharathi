@@ -1,7 +1,7 @@
 # finder-app/Makefile
 
 
-CC ?= gcc
+CC = gcc
 CROSS_COMPILE ?=
 TARGET = writer
 SRC = writer.c

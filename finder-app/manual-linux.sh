@@ -25,7 +25,7 @@ if ! sudo mkdir -p ${OUTDIR}; then
 	echo "ERROR: Could not create output directory ${OUTDIR}"
 	exit 1
 fi
-
+sudo rm -rf "${OUTDIR}/busybox" "${OUTDIR}/rootfs"
 cd "$OUTDIR"
 if [ ! -d "${OUTDIR}/linux-stable" ]; then
 	echo "CLONING GIT LINUX STABLE VERSION ${KERNEL_VERSION} IN ${OUTDIR}"
@@ -48,52 +48,43 @@ fi
 echo "Kernel built and copied to ${OUTDIR}/Image"
 
 echo "Creating the staging directory for the root filesystem"
-cd "$OUTDIR"
-if [ -d "${OUTDIR}/rootfs" ];
-    	sudo rm  -rf ${OUTDIR}/rootfs
-fi
-    		sudo rm  -rf ${OUTDIR}/rootfs
-
+sudo rm -rf "${OUTDIR}/rootfs"
 sudo mkdir -p "${OUTDIR}/rootfs"{/bin,/dev,/etc,/home,/lib,/lib64,/proc,/sys,/tmp,/usr,/var}
 sudo chmod 1777 "${OUTDIR}/rootfs/tmp"
 
-cd "$OUTDIR"
-if [ ! -d "${OUTDIR}/busybox" ]
-then
-git clone https://git.busybox.net/busybox
-    cd busybox
-    git checkout ${BUSYBOX_VERSION}
-else
-    cd busybox
+# Build and install BusyBox
+if [ ! -d "${OUTDIR}/busybox" ]; then
+    git clone https://git.busybox.net/busybox "${OUTDIR}/busybox"
+    cd "${OUTDIR}/busybox"
+    git checkout "${BUSYBOX_VERSION}"
 fi
+
+cd "${OUTDIR}/busybox"
 make distclean
-make ARCH=arm64 CROSS_COMPILE=${CROSS_COMPILE} defconfig
-make -j$(nproc) ARCH=arm64 CROSS_COMPILE=${CROSS_COMPILE}
-make ARCH=arm64 CROSS_COMPILE=${CROSS_COMPILE} CONFIG_PREFIX="${OUTDIR}/rootfs" install
-cd "${OUTDIR}"
-
-echo "Library dependencies"
-
-${CROSS_COMPILE}readelf -a ${OUTDIR}/bin/busybox | grep "program interpreter"
-${CROSS_COMPILE}readelf -a /bin/busybox | grep "Shared library"
+make ARCH=arm64 CROSS_COMPILE="${CROSS_COMPILE}" defconfig
+make -j$(nproc) ARCH=arm64 CROSS_COMPILE="${CROSS_COMPILE}"
+sudo make ARCH=arm64 CROSS_COMPILE="${CROSS_COMPILE}" CONFIG_PREFIX="${OUTDIR}/rootfs" install
 
 echo "Library dependencies: searching for dependencies in ~/bin/busybox"
 
-${CROSS_COMPILE}readelf -a ~/bin/busybox | grep "program interpreter"
-${CROSS_COMPILE}readelf -a ~/bin/busybox | grep "Shared library"
+${CROSS_COMPILE}readelf -a ${OUTDIR}/rootfs/bin/busybox | grep "program interpreter"
+${CROSS_COMPILE}readelf -a ${OUTDIR}/rootfs/bin/busybox | grep "Shared library"
+
+
 
 # TODO: Add library dependencies to rootfs
 SYSROOT=$(${CROSS_COMPILE}gcc --print-sysroot)
 
-cp -a $SYSROOT/lib/ld-linux-aarch64.so.1 ${OUTDIR}/rootfs/lib/
-cp -a $SYSROOT/lib/libc.so.6 ${OUTDIR}/rootfs/lib64/
-cp -a $SYSROOT/lib/libm.so.6 ${OUTDIR}/rootfs/lib64/
-cp -a $SYSROOT/lib64/libresolv.s0.6 ${OUTDIR}/rootfs/lib64/
+echo "copying ARM64 libraries from sysroot: ${SYSROOT}"
 
+sudo cp -a $SYSROOT/lib/ld-linux-aarch64.so.1 ${OUTDIR}/rootfs/lib/ 2>/dev/null || true
+sudo cp -a $SYSROOT/lib64/libc.so.6 ${OUTDIR}/rootfs/lib64/ 2>/dev/null || true
+sudo cp -a $SYSROOT/lib64/libm.so.6 ${OUTDIR}/rootfs/lib64/ 2>/dev/null || true
+sudo cp -a $SYSROOT/lib64/libresolv.s0.2 ${OUTDIR}/rootfs/lib64/ 2>/dev/null || true
 
+ls -la "${OUTDIR}/rootfs/lib/"*.so* "${OUTDIR}/rootfs/lib64/"*.so* 2>/dev/null
 
 # TODO: Make device nodes
-
 sudo mknod -m 666 ${OUTDIR}/rootfs/dev/null c 1 3
 sudo mknod -m 622 ${OUTDIR}/rootfs/dev/console c 5 1
 
@@ -102,24 +93,24 @@ sudo mknod -m 622 ${OUTDIR}/rootfs/dev/console c 5 1
 cd ~/repos/aeld-assignments/finder-app/
 make clean
 make ARCH=arm64 CROSS_COMPILE=${CROSS_COMPILE}
-cp writer ${OUTDIR}/rootfs/home
+sudo cp writer ${OUTDIR}/rootfs/home
 
 # TODO: Copy the finder related scripts and executables to the /home directory
 
 sudo mkdir -p "${OUTDIR}/rootfs/home/finder-app"
-cp -r ~/repos/aeld-assignments/conf/* ${OUTDIR}/rootfs/home/
-cp -r  ~/repos/aeld-assignments/finder-app/* ${OUTDIR}/rootfs/home/finder-app/
-cp ~/repos/aeld-assignments/autorun-qemu.sh ${OUTDIR}/rootfs/home/
+sudo cp -r ~/repos/aeld-assignments/conf/* ${OUTDIR}/rootfs/home/
+sudo cp -r  ~/repos/aeld-assignments/finder-app/* ${OUTDIR}/rootfs/home/finder-app/
+sudo cp ~/repos/aeld-assignments/autorun-qemu.sh ${OUTDIR}/rootfs/home/
 
 # TODO: Chown the root directory
 
-cd ${OUTDIR}/rootfs
+cd ${OUTDIR}
 sudo chown -R root:root *
 
 # TODO: Create initramfs.cpio.gz
 
 cd ${OUTDIR}/rootfs
 find . | cpio -H newc -ov --owner root:root > ${OUTDIR}/initramfs.cpio
-gzip -f ${OUTDIR}/initramfs.cpio.gz
+gzip -f ${OUTDIR}/initramfs.cpio
 
 echo "process compelted. Output: ${OUTDIR}/Image and ${OUTDIR}/initramfs.cpio.gz"
