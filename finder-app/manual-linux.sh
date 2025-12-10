@@ -11,7 +11,22 @@ KERNEL_VERSION=v5.15.163
 BUSYBOX_VERSION=1_33_1
 FINDER_APP_DIR=$(realpath $(dirname $0))
 ARCH=arm64
-CROSS_COMPILE=/home/ravi/toolchain/arm-gnu-toolchain-14.3.rel1-x86_64-aarch64-none-linux-gnu/bin/aarch64-none-linux-gnu-
+
+if [ -z "${CROSS_COMPILE:-}" ]; then
+    # Try to find toolchain in common locations
+    if [ -x /home/ravi/toolchain/arm-gnu-toolchain-14.3.rel1-x86_64-aarch64-none-linux-gnu/bin/aarch64-none-linux-gnu-gcc ]; then
+        CROSS_COMPILE=/home/ravi/toolchain/arm-gnu-toolchain-14.3.rel1-x86_64-aarch64-none-linux-gnu/bin/aarch64-none-linux-gnu-
+    elif [ -x /toolchain/arm-gnu-toolchain-14.3.rel1-x86_64-aarch64-none-linux-gnu/bin/aarch64-none-linux-gnu-gcc ]; then
+        CROSS_COMPILE=/toolchain/arm-gnu-toolchain-14.3.rel1-x86_64-aarch64-none-linux-gnu/bin/aarch64-none-linux-gnu-
+    elif command -v aarch64-none-linux-gnu-gcc &>/dev/null; then
+        CROSS_COMPILE=aarch64-none-linux-gnu-
+    else
+        echo "ERROR: ARM64 toolchain not found"
+        echo "Set CROSS_COMPILE environment variable or install toolchain"
+        exit 1
+    fi
+fi
+
 
 if [ $# -lt 1 ]
 then
