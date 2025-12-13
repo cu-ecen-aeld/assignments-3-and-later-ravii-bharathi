@@ -5,22 +5,46 @@ on:
             - '*'
         branches:
             - '*'
+
 jobs:
     unit-test:
-        container: cuaesd/aesd-autotest:24-unit-test
+        container: 
+            image: cuaesd/aesd-autotest:24-unit-test
+            options: --volume /home/ravi/toolchain:/toolchain:ro
         runs-on: self-hosted
         steps:
           - uses: actions/checkout@v2
+          
           - name: Checkout submodules
-            run : git submodule update --init --recursive
+            run: git submodule update --init --recursive
+          
           - name: Run unit test
             run: ./unit-test.sh
+            env:
+              CROSS_COMPILE: /toolchain/arm-gnu-toolchain-14.3.rel1-x86_64-aarch64-none-linux-gnu/bin/aarch64-none-linux-gnu-
+
     full-test:
-        container: cuaesd/aesd-autotest:24-assignment3
+        container: 
+            image: cuaesd/aesd-autotest:24-assignment3
+            options: >-
+              --privileged
+              --cap-add=SYS_ADMIN
+              --volume /home/ravi/toolchain:/toolchain:ro
         runs-on: self-hosted
         steps:
           - uses: actions/checkout@v2
+          
+          - name: Verify toolchain mounted
+            run: |
+              echo "Checking toolchain at /toolchain..."
+              ls -la /toolchain/arm-gnu-toolchain-14.3.rel1-x86_64-aarch64-none-linux-gnu/bin/aarch64-none-linux-gnu-gcc
+              /toolchain/arm-gnu-toolchain-14.3.rel1-x86_64-aarch64-none-linux-gnu/bin/aarch64-none-linux-gnu-gcc --version
+          
           - name: Checkout submodules
-            run : git submodule update --init --recursive
+            run: git submodule update --init --recursive
+          
           - name: Run full test
             run: ./full-test.sh
+            env:
+              CROSS_COMPILE: /toolchain/arm-gnu-toolchain-14.3.rel1-x86_64-aarch64-none-linux-gnu/bin/aarch64-none-linux-gnu-
+

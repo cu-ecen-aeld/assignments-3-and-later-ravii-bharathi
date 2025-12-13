@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 filesdir=$1
 searchstr=$2
@@ -13,7 +13,7 @@ fi
 #check if filesdir is a directory
 if [ ! -d "$filesdir" ]; then
 	echo "Error: $filesdir is not a directory."
-	ecit 1
+	exit 1
 fi
 
 #count number of files in directory and sub-directories
