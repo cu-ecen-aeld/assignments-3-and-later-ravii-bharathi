@@ -61,7 +61,7 @@ bool start_thread_obtaining_mutex(pthread_t *thread, pthread_mutex_t *mutex,int 
      */
 	struct thread_data *thread_args = (struct thread_data *)malloc(sizeof(struct thread_data));
 
-	if(thread_args = NULL){
+	if(thread_args == NULL){
 		ERROR_LOG("memory allocation failed for thread_data");
 		return false;
 	}
