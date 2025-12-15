@@ -1,3 +1,6 @@
+#ifndef __THREADING_H__
+#define __THREADING_H__
+
 #include <stdbool.h>
 #include <pthread.h>
 
@@ -7,6 +10,7 @@
  * It should be returned by your thread so it can be freed by
  * the joiner thread.
  */
+
 struct thread_data{
     /*
      * TODO: add other values your thread will need to manage
@@ -14,12 +18,16 @@ struct thread_data{
      * between the start_thread_obtaining_mutex function and
      * your thread implementation.
      */
+	pthread_t thread_id;		//thread id assigned by pthread_create
+	pthread_mutex_t *mutex;		// pointer to the mutex to synchronize with
+	int wait_to_obtain_ms;		// time to wait before obtaining mutex
+	int wait_to_release_ms;		// time to hold the mutex(milliseconds)
 
     /**
      * Set to true if the thread completed with success, false
      * if an error occurred.
      */
-    bool thread_complete_success;
+	bool thread_complete_success;
 };
 
 
