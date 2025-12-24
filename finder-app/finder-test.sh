@@ -14,14 +14,12 @@ set -u
 NUMFILES=10
 WRITESTR=AELD_IS_FUN
 WRITEDIR=/tmp/aeld-data
+RESULT_FILE=/tmp/assignment4-result.txt
+CONF_DIR=/etc/finder-app/conf
 
 # Load configuration - try multiple paths for flexibility
 if [ -f "./username.txt" ]; then
-    username=$(cat ./username.txt)
-elif [ -f "conf/username.txt" ]; then
-    username=$(cat conf/username.txt)
-elif [ -f "/home/conf/username.txt" ]; then
-    username=$(cat /home/conf/username.txt)
+    username=$(cat "${CONF_DIR}/username.txt")
 else
     echo "ERROR: Cannot find username.txt"
     exit 1
@@ -29,11 +27,7 @@ fi
 
 # Load assignment number
 if [ -f "./assignment.txt" ]; then
-    assignment=$(cat ./assignment.txt)
-elif [ -f "conf/assignment.txt" ]; then
-    assignment=$(cat conf/assignment.txt)
-elif [ -f "/home/conf/assignment.txt" ]; then
-    assignment=$(cat /home/conf/assignment.txt)
+    assignment=$(cat ${CONF_DIR}/assignment.txt)
 else
     echo "ERROR: Cannot find assignment.txt"
     exit 1
@@ -97,16 +91,7 @@ echo "Writing ${NUMFILES} files containing string '${WRITESTR}' to ${WRITEDIR}..
 
 for i in $(seq 1 $NUMFILES); do
     filename="${WRITEDIR}/${username}$i.txt"
-    
-    # Use pre-built writer binary (not make-based rebuild)
-    if [ -x "./writer" ]; then
-        ./writer "$filename" "$WRITESTR"
-    elif [ -x "/home/writer" ]; then
-        /home/writer "$filename" "$WRITESTR"
-    else
-        echo "ERROR: writer binary not found"
-        exit 1
-    fi
+   	writer "$filename" "$WRITEDIR" 
 done
 
 echo "✓ Files written"
@@ -118,14 +103,7 @@ echo "✓ Files written"
 echo ""
 echo "Running finder.sh to count matching lines..."
 
-if [ -x "./finder.sh" ]; then
-    OUTPUTSTRING=$(./finder.sh "$WRITEDIR" "$WRITESTR")
-elif [ -x "/home/finder.sh" ]; then
-    OUTPUTSTRING=$(/home/finder.sh "$WRITEDIR" "$WRITESTR")
-else
-    echo "ERROR: finder.sh not found"
-    exit 1
-fi
+OUTPUTSTRING=$(finder.sh "$WRITEDIR" "$WRITESTR")
 
 echo "Result: ${OUTPUTSTRING}"
 
@@ -140,7 +118,7 @@ echo "  Got:      ${OUTPUTSTRING}"
 echo ""
 
 # Save result for debugging
-echo "${OUTPUTSTRING}" > /tmp/assignment-result.txt
+echo "${OUTPUTSTRING}" > "${RESULT_FILE}"
 
 # Clean temporary directories
 rm -rf /tmp/aeld-data
